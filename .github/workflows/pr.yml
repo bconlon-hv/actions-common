@@ -84,6 +84,7 @@ jobs:
         - /home/runner/caches/pentaho/.m2:/root/.m2
 
     steps:
+
       - name: Checkout code
         uses: actions/checkout@v3
         with:
@@ -113,40 +114,6 @@ jobs:
           sonar_utility: sonar-scanner
           sonar_commands: '("-Dsonar.projectKey=${{env.SONAR_PROJECT_KEY}} -Dsonar.host.url=${{env.SONAR_HOST_URL}} -Dsonar.login=${{env.SONAR_LOGIN}} -Dsonar.pullrequest.key=${{github.event.number}} -Dsonar.pullrequest.branch=${{github.event.pull_request.head.ref}} -Dsonar.pullrequest.base=${{github.event.pull_request.base.ref}}")'
 
-
-  plugin-integration-test-job:
-    needs: setup-maven-settings
-    runs-on: [ k8s ] // TODO still unsure about k8s runners
-    container:
-      image: docker.repo.orl.eng.hitachivantara.com/pentaho/actions-common:20230712.10
-      volumes:
-        - /home/runner/caches/pentaho/.m2:/root/.m2
-
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v3
-        with:
-          fetch-depth: 0
-
-      - name: Determine which changes occurred
-        id: change_detection
-        uses: hv-actions/change-detection-builder@1.0.1
-
-#      TODO - for each module that has both changed and has implemented the plugin test framework, run all declared permutations of test
-#      - this should really be multiple jobs so it can be run in parallel, not multiple sequential steps in a job
-
-
-  notification-job:
-#    //TODO ugh  - probably can't move this to its own job because it needs context into all the steps that run during the common-job job
-#    // probably need to keep this as multiple steps within the job
-    needs: [common-job, plugin-integration-test-job]
-    runs-on: [ k8s ]
-    container:
-      image: docker.repo.orl.eng.hitachivantara.com/pentaho/actions-common:20230712.10
-      volumes:
-      - /home/runner/caches/pentaho/.m2:/root/.m2
-
-    steps:
       - name: Report notifications
         if: always()
         uses: lumada-common-services/gh-composite-actions@1.3.1
